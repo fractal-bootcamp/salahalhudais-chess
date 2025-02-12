@@ -119,7 +119,7 @@ class Bishop extends ChessPiece implements generateMoves {
   }
 
   generate(board: BoardState, index: number): number[] {
-    x Generate a bunch of possible moves that can be made from the current board State. We can then use this as a prefix
+    // x Generate a bunch of possible moves that can be made from the current board State. We can then use this as a prefix
     // to every move. For every piece, it will contain it's own state of possible moves.
     
 
