@@ -14,9 +14,9 @@ interface generateMoves {
   generate(board: BoardState, index: number): number[];
 }
 
-class Pawn extends ChessPiece implements generateMoves {
-  private justMadeTwoSquareMove = false;
-  private hasMoved = false;
+export class Pawn extends ChessPiece implements generateMoves {
+  public justMadeTwoSquareMove = false;
+  public hasMoved = false;
   constructor(color: 'white' | 'black') {
     super(color, 'pawn')
   }
@@ -78,7 +78,7 @@ class Pawn extends ChessPiece implements generateMoves {
     return moves;
   }
 }
-class Knight extends ChessPiece implements generateMoves {
+export class Knight extends ChessPiece implements generateMoves {
   constructor(color: 'white' | 'black') {
     super(color, 'knight')
   }
@@ -113,7 +113,7 @@ class Knight extends ChessPiece implements generateMoves {
   }
 }
 
-class Bishop extends ChessPiece implements generateMoves {
+export class Bishop extends ChessPiece implements generateMoves {
   constructor(color: 'white' | 'black') {
     super(color, 'bishop')
   }
@@ -175,7 +175,7 @@ class Bishop extends ChessPiece implements generateMoves {
   }
 }
 
-class Rook extends ChessPiece implements generateMoves {
+export class Rook extends ChessPiece implements generateMoves {
   constructor(color: 'white' | 'black') {
     super(color, 'rook')
   }
@@ -222,7 +222,7 @@ class Rook extends ChessPiece implements generateMoves {
   }
 }
 
-class Queen extends ChessPiece implements generateMoves {
+export class Queen extends ChessPiece implements generateMoves {
   constructor(color: 'white' | 'black') {
     super(color, 'queen')
   }
@@ -292,7 +292,7 @@ class Queen extends ChessPiece implements generateMoves {
   }
 }
 
-class King extends ChessPiece implements generateMoves {
+export class King extends ChessPiece implements generateMoves {
   constructor(color: 'white' | 'black') {
     super(color, 'king')
   }
@@ -356,10 +356,11 @@ const algebraicToIndex = (index: String): number => {
 }
 
 class BoardState {
+  public turn;
   public board: Array<ChessPiece | null> = [];
-  private castlingPrivilegeWhite = true;
-  private castlingPrivilegeBlack = true;
-  private whitePieces: [
+  public castlingPrivilegeWhite = true;
+  public castlingPrivilegeBlack = true;
+  public whitePieces: [
     King,
     Queen,
     Bishop,
@@ -377,7 +378,7 @@ class BoardState {
     Pawn,
     Pawn
   ] = [] as any;
-  private blackPieces: [
+  public blackPieces: [
     King,
     Queen,
     Bishop,
@@ -395,7 +396,6 @@ class BoardState {
     Pawn,
     Pawn
   ] = [] as any;
-  private turn;
 
   constructor() {
     this.turn = "white";
@@ -465,7 +465,7 @@ class BoardState {
   // isValidMove to check if valid move
   // switchTurn
 
-  private isValidMove(from: number, to: number): boolean {
+  isValidMove(from: number, to: number): boolean {
     const tempBoard = [...this.board];
     const piece = tempBoard[from];
     tempBoard[to] = piece;
@@ -475,7 +475,7 @@ class BoardState {
     return !this.isSquareUnderAttack(kingPos, piece.color, tempBoard);
   }
 
-  private findKing(color: string, board: Array<ChessPiece | null>): number {
+  findKing(color: string, board: Array<ChessPiece | null>): number {
     for(let i = 0; i < board.length; i++) {
         const piece = board[i];
         if (piece instanceof King && piece.color === color) {
@@ -485,7 +485,7 @@ class BoardState {
     throw new Error(`${color} king not found on board`);
   }
 
-  private isSquareUnderAttack(square: number, color: string, board: Array<ChessPiece | null>): boolean {
+  isSquareUnderAttack(square: number, color: string, board: Array<ChessPiece | null>): boolean {
     for(let i = 0; i < board.length; i++) {
         const piece = board[i];
         if (piece && piece.color !== color) {
@@ -501,7 +501,7 @@ class BoardState {
     return false;
   }
 
-  private isCheckmate(color: string): boolean {
+  isCheckmate(color: string): boolean {
     if (!this.isInCheck(color)) {
         return false;
     }
@@ -520,7 +520,7 @@ class BoardState {
     return true;
   }
 
-  private isInCheck(color: string): boolean {
+  isInCheck(color: string): boolean {
     const kingPosition = this.findKing(color, this.board);
     return this.isSquareUnderAttack(kingPosition, color, this.board);
   }
@@ -630,7 +630,7 @@ class BoardState {
   }
 
 
-  private displayBoard(): void {
+  displayBoard(): void {
   const boardArt: string[] = [];
   const cellHeight = 3;
   let topLabels = "    ";
