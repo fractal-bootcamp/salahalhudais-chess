@@ -102,36 +102,43 @@ io.on('connection', (socket) => {
   });
 
   socket.on("make_move", ({ from, to, gameId }) => {
-    console.log(from, to);
+    console.log(`Attempting move from ${from} to ${to} in game ${gameId}`);
     let game = games.get(gameId);
+    console.log(game);
     if (!game) {
-      socket.emit('error', {message: 'Game not found!'});
-      return;
+        socket.emit('error', {message: 'Game not found!'});
+        return;
     }
 
     let player = Object.values(game.players).find((p) => p.socketId === socket.id);
     if (!player) {
-      socket.emit("error", {message: "Player not found"});
-      return;
-    }
-    const isWhiteTurn = game.board.turn === 'white';
-    if ((isWhiteTurn && player.color !== 'white') || 
-        (!isWhiteTurn && player.color !== 'black')) {
-      socket.emit("error", {message: "Not your turn"});
-      return;
+        socket.emit("error", {message: "Player not found"});
+        return;
     }
 
-    if (game.board.makeMove(from, to)) {
-      const nextTurn = player.color === 'white' ? 'black' : 'white';
-      game.board.turn = nextTurn;
-      
-      io.to(gameId).emit('move_made', {
-        from,
-        to,
-        gameId,
-        color: player.color,
-        nextTurn: nextTurn
-      });
+    // Validate it's the player's turn
+    if (game.board.turn !== player.color) {
+        socket.emit("error", {message: "Not your turn"});
+        return;
+    }
+    const moveSuccessful = game.board.makeMove(from, to);
+    if (moveSuccessful) {
+        io.to(gameId).emit('move_made', {
+            from,
+            to,
+            gameId,
+            color: player.color,
+            nextTurn: game.board.turn,
+            board: game.board.getBoard().map(piece => {
+                if (!piece) return null;
+                return {
+                    type: piece.type,
+                    color: piece.color
+                };
+            })
+        });
+    } else {
+        socket.emit("error", {message: "Invalid move"});
     }
   });
 
