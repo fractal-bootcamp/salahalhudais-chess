@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { BoardState } from '../../../Chess Engine/src/setup'
+import { io } from "socket.io-client"
 import whitePawn from '../assets/pawn-w.svg'
 import whiteRook from '../assets/rook-w.svg'
 import whiteKnight from '../assets/knight-w.svg'
@@ -12,21 +13,117 @@ import blackKnight from '../assets/knight-b.svg'
 import blackBishop from '../assets/bishop-b.svg'
 import blackQueen from '../assets/queen-b.svg'
 import blackKing from '../assets/king-b.svg'
+import { Pawn, Rook, Knight, Bishop, Queen, King } from '../../../Chess Engine/src/setup'
 
-// assume human is always white
+// drone
+// 
 
 type PieceType = 'pawn' | 'rook' | 'knight' | 'bishop' | 'queen' | 'king';
+
+const socket = io("http://localhost:3000");
+
+// on connection it will initialize a game and automatically set a user to a player
+socket.on('connect', () => {
+  console.log('Connected to server');
+});
+
+socket.on('join_game', () => {}
+)
+
+// socket.on('make_move', {from, to, gameId});
 
 export default function ChessBoard() {
   const [boardState, setBoardState] = useState<BoardState>(new BoardState());
   const [selectedPiece, setSelectedPiece] = useState<number | null>(null);
-  const [currentPlayer, setCurrentPlayer] = useState<'white' | 'black'>('white');
+  const [playerColor, setPlayerColor] = useState<'white' | 'black' | null>(null);
+  const [gameId, setGameId] = useState< string | null>(null);
+
 
   useEffect(() => {
-    const newBoard  = new BoardState();
-    setBoardState(newBoard);
+    socket.connect();
+    socket.on('connect', () => {
+      console.log('Connected to server');
+      socket.emit('join_game');
+    });
+
+    const handlePlayerAssigned = ({ color, gameId }) => {
+      console.log(`Assigned color: ${color}, Game ID: ${gameId}`);
+      setPlayerColor(color);
+      setGameId(gameId);
+    };
+
+    const handleGameStart = ({ gameId, board, players }) => {
+      console.log("Game started!", players);
+      const newBoard = new BoardState();
+      newBoard.board = board.board.map((piece: any) => {
+        if (!piece) return null;
+        switch (piece.type) {
+          case 'pawn':
+            return new Pawn(piece.color);
+          case 'rook':
+            return new Rook(piece.color);
+          case 'knight':
+            return new Knight(piece.color);
+          case 'bishop':
+            return new Bishop(piece.color);
+          case 'queen':
+            return new Queen(piece.color);
+          case 'king':
+            return new King(piece.color);
+          default:
+            return null;
+        }
+      });
+      setBoardState(newBoard);
+    };
+
+    const handleMoveMade = ({ from, to, gameId, color, nextTurn, board }) => {
+      console.log(`${color} has made a move, next turn: ${nextTurn}`);
+      setBoardState(prevBoard => {
+        const newBoardState = new BoardState();
+        newBoardState.board = board.map((piece: any) => {
+          if (!piece) return null;
+          switch (piece.type) {
+            case 'pawn':
+              return new Pawn(piece.color);
+            case 'rook':
+              return new Rook(piece.color);
+            case 'knight':
+              return new Knight(piece.color);
+            case 'bishop':
+              return new Bishop(piece.color);
+            case 'queen':
+              return new Queen(piece.color);
+            case 'king':
+              return new King(piece.color);
+            default:
+              return null;
+          }
+        });
+        newBoardState.turn = nextTurn;
+        return newBoardState;
+      });
+    };
+
+    socket.on('player_assigned', handlePlayerAssigned);
+    socket.on('game_start', handleGameStart);
+    socket.on('move_made', handleMoveMade);
+
+    return () => {
+      socket.off('connect');
+      socket.off('player_assigned', handlePlayerAssigned);
+      socket.off('game_start', handleGameStart);
+      socket.off('move_made', handleMoveMade);
+    };
   }, []);
 
+  useEffect(() => {
+    console.log("Turn changed:", boardState.turn);
+  }, [boardState]);
+
+  useEffect(() => {
+    console.log("Board state changed:", boardState.turn);
+  }, [boardState]);
 
   // Board is initialized
   // W/ pieces placed on the 1-dimensional array
@@ -36,33 +133,31 @@ export default function ChessBoard() {
   // Highlight that in the rendering
 
   const handleSquareClick = (index: number) => {
+    console.log(`Current turn: ${boardState.turn}, Player color: ${playerColor}`);
+    
+    if (boardState.turn !== playerColor || !gameId) {
+      console.log("Not your turn or game hasn't started!");
+      return;
+    }
+
     if (selectedPiece === null) {
-      const piece = boardState.getBoard()[index];
-      if (piece && piece.color === currentPlayer) {
-        console.log(`${piece.color} ${piece.type}`);
+      const piece = boardState.board[index];
+      if (piece && piece.color === playerColor) {
         setSelectedPiece(index);
       }
     } else {
-      const targetPiece = boardState.getBoard()[index];
-      if (targetPiece && targetPiece.color === currentPlayer) {
+      const targetPiece = boardState.board[index];
+      if (targetPiece && targetPiece.color === playerColor) {
         setSelectedPiece(index);
         return;
       }
-      console.log(selectedPiece, index);
-      const newBoardState = new BoardState();
-      newBoardState.board = [...boardState.getBoard()];
-      newBoardState.turn = currentPlayer;
-      
-      const moveSuccessful = newBoardState.makeMove(selectedPiece, index);
-      console.log("Move successful:", moveSuccessful);
-      
-      if (moveSuccessful) {
-        setBoardState(newBoardState);
-        setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
-      }
+      socket.emit("make_move", {
+        from: selectedPiece,
+        to: index,
+        gameId: gameId
+      });
 
       setSelectedPiece(null);
-
     }
   }
 
@@ -93,10 +188,10 @@ export default function ChessBoard() {
   return (
     <div>
       <div className="player-control">
-        <p>Current Player: {currentPlayer}</p>
+        <p>Current Player: {boardState.turn}</p>
       </div>
       <div className="chess-board">
-        {boardState.getBoard().map((piece, index) => {
+        {boardState.board.map((piece, index) => {
           const row = 7 - Math.floor(index / 8);
           const col = index % 8;
           const isBlack = (row + col) % 2 === 1;

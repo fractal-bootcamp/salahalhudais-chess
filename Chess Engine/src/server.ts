@@ -25,7 +25,11 @@ interface Game {
 const games = new Map<string, Game>();
 
 const app = express();
+<<<<<<< Updated upstream
 app.use(cors({origin: 'http://localhost:5174', credentials: true}));
+=======
+app.use(cors({origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true}));
+>>>>>>> Stashed changes
 
 
 const server = http.createServer(app);
