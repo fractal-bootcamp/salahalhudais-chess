@@ -25,11 +25,19 @@ interface Game {
 const app = express();
 
 const FRONTEND_URLS = [
-  process.env.FRONTEND_DEV_URL, , process.env.FRONTEND_URL]
+  process.env.FRONTEND_DEV_URL,
+  process.env.FRONTEND_URL
+];
 
 // Express CORS
 app.use(cors({
-  origin: FRONTEND_URLS,
+  origin: function(origin, callback) {
+    if (!origin || FRONTEND_URLS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -44,7 +52,13 @@ const PORT = process.env.PORT || 4000
 
 const io = new Server(server, {
   cors: {
-    origin: FRONTEND_URLS,
+    origin: function(origin, callback) {
+      if (!origin || FRONTEND_URLS.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   }
