@@ -4,7 +4,7 @@ import { Server} from "socket.io"
 import http from 'http';
 import cors from 'cors';
 import dotenv from "dotenv";
-import { BoardState } from './chess';
+import { BoardState } from './chess.ts';
 
 dotenv.config();
 
