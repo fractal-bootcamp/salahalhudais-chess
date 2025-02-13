@@ -24,6 +24,7 @@ interface Game {
 }
 
 const games = new Map<string, Game>();
+let disconnectedGames = new Map<string, Game>();
 
 const app = express();
 app.use(cors({origin: ["https://salschess.netlify.app", 'http://localhost:5173'], credentials: true}));
@@ -41,13 +42,20 @@ const io = new Server(server, {
 });
 
 const findAvailableGames = (): Game | null => {
-  let availableGame: Game | null = null;
-  games.forEach((value, key) => {
-    if (value.status === 'waiting') {
-      availableGame = value;
+  // First check disconnected games
+  for (const [gameId, game] of disconnectedGames) {
+    if (!game.players.white || !game.players.black) {
+      return game;
     }
-  });
-  return availableGame;
+  }
+  
+  // Then check active games
+  for (const [_, game] of games) {
+    if (game.status === 'waiting') {
+      return game;
+    }
+  }
+  return null;
 }
 
 io.on('connection', (socket) => {
@@ -131,25 +139,25 @@ io.on('connection', (socket) => {
       }
     }) 
     socket.on('disconnect', () => {
-      // find the game and remove it, while making sure it had players. 
       for (const [gameId, game] of games) {
         let isWhite = game.players.white?.socketId === socket.id;
         let isBlack = game.players.black?.socketId === socket.id;
         
 
         if (isWhite || isBlack) {
-          game.status = 'completed';
-          io.to(gameId).emit('player_disconnected',{
+          // Instead of marking as completed, store it
+          disconnectedGames.set(gameId, game);
+          games.delete(gameId);
+          
+          io.to(gameId).emit('player_disconnected', {
             color: isWhite ? "white" : "black"
           });
-
-          setTimeout(() => games.delete(gameId), 5000);
         }
       }
       console.log('User disconnected');
     });
 })
 
-server.listen(PORT, () => {
+server.listen(3000, () => {
   console.log(`Listening on http://localhost:3000/`)
 });

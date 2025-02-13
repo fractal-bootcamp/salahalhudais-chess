@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { BoardState } from '../../../chessEngine/chess'
-import { io } from "socket.io-client"
+import { io, Socket } from "socket.io-client"
 import whitePawn from '../assets/pawn-w.svg'
 import whiteRook from '../assets/rook-w.svg'
 import whiteKnight from '../assets/knight-w.svg'
@@ -20,31 +20,22 @@ import { Pawn, Rook, Knight, Bishop, Queen, King } from '../../../chessEngine/ch
 
 type PieceType = 'pawn' | 'rook' | 'knight' | 'bishop' | 'queen' | 'king';
 
-const socket = io("https://salahalhudais-chess.onrender.com");
-
-// on connection it will initialize a game and automatically set a user to a player
-socket.on('connect', () => {
-  console.log('Connected to server');
-});
-
-socket.on('join_game', () => {}
-)
-
-// socket.on('make_move', {from, to, gameId});
 
 export default function ChessBoard() {
   const [boardState, setBoardState] = useState<BoardState>(new BoardState());
   const [selectedPiece, setSelectedPiece] = useState<number | null>(null);
   const [playerColor, setPlayerColor] = useState<'white' | 'black' | null>(null);
   const [gameId, setGameId] = useState< string | null>(null);
+  const socketRef = useRef<Socket | null>(null);
 
 
   useEffect(() => {
+    // Create socket connection
+    socketRef.current = io("http://localhost:3000/");
+    const socket = socketRef.current;
+    
     socket.connect();
-    socket.on('connect', () => {
-      console.log('Connected to server');
-      socket.emit('join_game');
-    });
+    socket.emit('join_game');
 
     const handlePlayerAssigned = ({ color, gameId }: any) => {
       console.log(`Assigned color: ${color}, Game ID: ${gameId}`);
@@ -77,8 +68,10 @@ export default function ChessBoard() {
       setBoardState(newBoard);
     };
 
-    const handleMoveMade = ({ color, nextTurn, board }: any) => {
-      console.log(`${color} has made a move, next turn: ${nextTurn}`);
+    const handleMoveMade = ({ color, nextTurn, board, from, to }: any) => {
+      console.log(`Move made: ${color} moved from ${from} to ${to}`);
+      console.log(`Next turn: ${nextTurn}`);
+      
       setBoardState(prevBoard => {
         const newBoardState = new BoardState();
         if (!board || !Array.isArray(board.board)) {
@@ -110,23 +103,20 @@ export default function ChessBoard() {
       });
     };
 
+    const handlePlayerDisconnected = ({ color }: { color: 'white' | 'black' }) => {
+      // Handle disconnection logic
+    };
     socket.on('player_assigned', handlePlayerAssigned);
     socket.on('game_start', handleGameStart);
     socket.on('move_made', handleMoveMade);
-
-    socket.on('move_made', (data) => {
-      console.log('Move made received:', data);
-    });
-
-    socket.on('error', (data) => {
-      console.log('Error received:', data);
-    });
+    socket.on('player_disconnected', handlePlayerDisconnected);
 
     return () => {
-      socket.off('connect');
       socket.off('player_assigned', handlePlayerAssigned);
       socket.off('game_start', handleGameStart);
       socket.off('move_made', handleMoveMade);
+      socket.off('player_disconnected', handlePlayerDisconnected);
+      socket.disconnect();
     };
   }, []);
 
@@ -146,6 +136,8 @@ export default function ChessBoard() {
   // Highlight that in the rendering
 
   const handleSquareClick = (index: number) => {
+    if (!socketRef.current) return;
+    
     console.log(`Current turn: ${boardState.turn}, Player color: ${playerColor}`);
     
     if (boardState.turn !== playerColor || !gameId) {
@@ -164,15 +156,15 @@ export default function ChessBoard() {
         setSelectedPiece(index);
         return;
       }
-      socket.emit("make_move", {
+      socketRef.current.emit('make_move', {
         from: selectedPiece,
         to: index,
-        gameId: gameId
+        gameId
       });
       console.log('Emitting move:', {
         from: selectedPiece,
         to: index,
-        gameId: gameId
+        gameId
       });
 
       setSelectedPiece(null);
