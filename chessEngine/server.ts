@@ -51,7 +51,6 @@ io.on('connection', (socket) => {
   console.log("New connection:", socket.id);
   
   socket.on('join_game', () => {
-    // Find or create a game with an open slot
     let availableGame = Array.from(games.values()).find(game => 
       !game.players.white || !game.players.black
     );
@@ -74,8 +73,6 @@ io.on('connection', (socket) => {
     console.log(availableGame);
     socket.join(availableGame.gameId);
     socket.emit("player_assigned", { color, gameId: availableGame.gameId });
-
-    // Start game when both players are present
     if (availableGame.players.white && availableGame.players.black) {
       io.to(availableGame.gameId).emit('game_start', {
         board: availableGame.board,

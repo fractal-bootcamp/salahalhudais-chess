@@ -29,7 +29,7 @@ export default function ChessBoard() {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    const socket = io("http://localhost:4000");
+    const socket = io("https://salahalhudais-chess.onrender.com");
     socketRef.current = socket;
 
     socket.on('player_assigned', ({ color, gameId }) => {
@@ -45,7 +45,7 @@ export default function ChessBoard() {
     });
 
     socket.on('move_made', ({ board, nextTurn }) => {
-      setBoardState(prev => {
+      setBoardState(() => {
         const newBoard = new BoardState();
         newBoard.board = reconstructPieces(board.board);
         newBoard.turn = nextTurn;
@@ -120,7 +120,7 @@ export default function ChessBoard() {
               className={`square ${isBlack ? 'black' : 'white'} ${selectedPiece == index ? 'selected' : ''}`}
               onClick={() => handleSquareClick(index)}
             >
-              {piece && <img src={getPieceImage(piece)} alt={`${piece.color} ${piece.type?.toLowerCase()}`} className="chess-piece" />}
+              {piece && <img src={getPieceImage(piece)!} alt={`${piece.color} ${piece.type?.toLowerCase()}`} className="chess-piece" />}
             </div>
           )
         })}
