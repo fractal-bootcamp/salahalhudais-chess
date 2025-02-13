@@ -114,6 +114,14 @@ export default function ChessBoard() {
     socket.on('game_start', handleGameStart);
     socket.on('move_made', handleMoveMade);
 
+    socket.on('move_made', (data) => {
+      console.log('Move made received:', data);
+    });
+
+    socket.on('error', (data) => {
+      console.log('Error received:', data);
+    });
+
     return () => {
       socket.off('connect');
       socket.off('player_assigned', handlePlayerAssigned);
@@ -157,6 +165,11 @@ export default function ChessBoard() {
         return;
       }
       socket.emit("make_move", {
+        from: selectedPiece,
+        to: index,
+        gameId: gameId
+      });
+      console.log('Emitting move:', {
         from: selectedPiece,
         to: index,
         gameId: gameId

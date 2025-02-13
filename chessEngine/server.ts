@@ -96,30 +96,38 @@ io.on('connection', (socket) => {
       }
     });
 
-    socket.on("make_move", ({ from, to, gameId }) => {
-      // find game
+      socket.on("make_move", ({ from, to, gameId }) => {
+      console.log(`Move request received - from: ${from}, to: ${to}, gameId: ${gameId}`);
+      
       let game = games.get(gameId);
       if (!game) {
-        socket.emit('error', {message: 'Game not found!'});
-        return;
+          console.log('Game not found:', gameId);
+          socket.emit('error', {message: 'Game not found!'});
+          return;
       }
 
-      // find who wants to make a move
       let player = Object.values(game.players).find((p) => p.socketId === socket.id);
       if (!player) {
-        socket.emit("error", {message: "Player not found"});
-        return;
+          console.log('Player not found for socket:', socket.id);
+          socket.emit("error", {message: "Player not found"});
+          return;
       }
 
+      console.log(`Current board turn: ${game.board.turn}, Player color: ${player.color}`);
+      
       if (game.board.makeMove(from, to)) {
-        io.to(gameId).emit('move_made', {
-          from,
-          to,
-          gameId,
-          color: player.color,  
-          nextTurn: game.board.turn,
-          board: game.board
-        });
+          console.log(`Move successful - Emitting move_made event`);
+          io.to(gameId).emit('move_made', {
+              from,
+              to,
+              gameId,
+              color: player.color,  
+              nextTurn: game.board.turn,
+              board: game.board
+          });
+      } else {
+          console.log('Move failed');
+          socket.emit("error", {message: "Invalid move"});
       }
     }) 
     socket.on('disconnect', () => {
@@ -143,5 +151,5 @@ io.on('connection', (socket) => {
 })
 
 server.listen(PORT, () => {
-  console.log(`Listening on http://localhost:3000/${PORT}`)
+  console.log(`Listening on http://localhost:3000/`)
 });
