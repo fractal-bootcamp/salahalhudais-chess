@@ -103,7 +103,7 @@ export default function ChessBoard() {
       });
     };
 
-    const handlePlayerDisconnected = ({ color }: { color: 'white' | 'black' }) => {
+    const handlePlayerDisconnected = () => {
       // Handle disconnection logic
     };
     socket.on('player_assigned', handlePlayerAssigned);
