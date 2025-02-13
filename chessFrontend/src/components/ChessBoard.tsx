@@ -27,189 +27,82 @@ export default function ChessBoard() {
   const [playerColor, setPlayerColor] = useState<'white' | 'black' | null>(null);
   const [gameId, setGameId] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // Only create a new connection if one doesn't exist
-    if (!socketRef.current && !isConnected) {
-      socketRef.current = io("https://salahalhudais-chess.onrender.com", {
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000
-      });
-      
-      const socket = socketRef.current;
+    const socket = io("http://localhost:4000");
+    socketRef.current = socket;
 
-      socket.on('connect', () => {
-        console.log('Connected with ID:', socket.id);
-        setIsConnected(true);
-        socket.emit('join_game');
-      });
+    socket.on('player_assigned', ({ color, gameId }) => {
+      setPlayerColor(color);
+      setGameId(gameId);
+    });
 
-      socket.on('disconnect', () => {
-        console.log('Disconnected from server');
-        setIsConnected(false);
-      });
+    socket.on('game_start', ({ board }) => {
+      const newBoard = new BoardState();
+      newBoard.board = reconstructPieces(board.board);
+      newBoard.turn = board.turn;
+      setBoardState(newBoard);
+    });
 
-      const handlePlayerAssigned = ({ color, gameId }: any) => {
-        console.log(`Assigned color: ${color}, Game ID: ${gameId}`);
-        setPlayerColor(color);
-        setGameId(gameId);
-      };
-
-      const handleGameStart = ({ board, players }: any) => {
-        console.log("Game started!", players);
+    socket.on('move_made', ({ board, nextTurn }) => {
+      setBoardState(prev => {
         const newBoard = new BoardState();
-        newBoard.board = board.board.map((piece: any) => {
-          if (!piece) return null;
-          switch (piece.type) {
-            case 'pawn':
-              return new Pawn(piece.color);
-            case 'rook':
-              return new Rook(piece.color);
-            case 'knight':
-              return new Knight(piece.color);
-            case 'bishop':
-              return new Bishop(piece.color);
-            case 'queen':
-              return new Queen(piece.color);
-            case 'king':
-              return new King(piece.color);
-            default:
-              return null;
-          }
-        });
-        setBoardState(newBoard);
-      };
+        newBoard.board = reconstructPieces(board.board);
+        newBoard.turn = nextTurn;
+        return newBoard;
+      });
+    });
 
-      const handleMoveMade = ({ color, nextTurn, board, from, to }: any) => {
-        console.log(`Move made: ${color} moved from ${from} to ${to}`);
-        console.log(`Next turn: ${nextTurn}`);
-        
-        setBoardState(prevBoard => {
-          const newBoardState = new BoardState();
-          if (!board || !Array.isArray(board.board)) {
-            console.error('Invalid board state received:', board);
-            return prevBoard;
-          }
-          
-          newBoardState.board = board.board.map((piece: any) => {
-            if (!piece) return null;
-            switch (piece.type) {
-              case 'pawn':
-                return new Pawn(piece.color);
-              case 'rook':
-                return new Rook(piece.color);
-              case 'knight':
-                return new Knight(piece.color);
-              case 'bishop':
-                return new Bishop(piece.color);
-              case 'queen':
-                return new Queen(piece.color);
-              case 'king':
-                return new King(piece.color);
-              default:
-                return null;
-            }
-          });
-          newBoardState.turn = nextTurn;
-          return newBoardState;
-        });
-      };
-
-      const handlePlayerDisconnected = () => {
-        // Handle disconnection logic
-      };
-      socket.on('player_assigned', handlePlayerAssigned);
-      socket.on('game_start', handleGameStart);
-      socket.on('move_made', handleMoveMade);
-      socket.on('player_disconnected', handlePlayerDisconnected);
-    }
+    socket.emit('join_game');
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-        setIsConnected(false);
-      }
+      socket.disconnect();
     };
-  }, [isConnected]);
-
-  useEffect(() => {
-    console.log("Turn changed:", boardState.turn);
-  }, [boardState]);
-
-  useEffect(() => {
-    console.log("Board state changed:", boardState.turn);
-  }, [boardState]);
-
-  // Board is initialized
-  // W/ pieces placed on the 1-dimensional array
-
-  // When selectedPiece is not null
-  // Output the # of moves available
-  // Highlight that in the rendering
+  }, []);
 
   const handleSquareClick = (index: number) => {
-    if (!socketRef.current) return;
+    if (!playerColor || !gameId || boardState.turn !== playerColor) return;
     
-    console.log(`Current turn: ${boardState.turn}, Player color: ${playerColor}`);
-    
-    if (boardState.turn !== playerColor || !gameId) {
-      console.log("Not your turn or game hasn't started!");
-      return;
-    }
-
     if (selectedPiece === null) {
       const piece = boardState.board[index];
-      if (piece && piece.color === playerColor) {
-        setSelectedPiece(index);
-      }
+      if (piece?.color === playerColor) setSelectedPiece(index);
     } else {
-      const targetPiece = boardState.board[index];
-      if (targetPiece && targetPiece.color === playerColor) {
-        setSelectedPiece(index);
-        return;
+      if (boardState.isValidMove(selectedPiece, index)) {
+        socketRef.current?.emit('make_move', {
+          from: selectedPiece,
+          to: index,
+          gameId
+        });
       }
-      socketRef.current.emit('make_move', {
-        from: selectedPiece,
-        to: index,
-        gameId
-      });
-      console.log('Emitting move:', {
-        from: selectedPiece,
-        to: index,
-        gameId
-      });
-
       setSelectedPiece(null);
     }
-  }
+  };
 
-  const getPieceImage = (piece: { color: 'white' | 'black', type: PieceType }): string => {
-    if (!piece) throw new Error("Piece is required");
+  const getPieceImage = (piece: { color: 'white' | 'black', type: PieceType } | null): string | null => {
+    if (!piece) return null;
     
     const pieceImages = {
-      'white': {
-        'pawn': whitePawn,
-        'rook': whiteRook,
-        'knight': whiteKnight,
-        'bishop': whiteBishop,
-        'queen': whiteQueen,
-        'king': whiteKing
+      white: {
+        pawn: whitePawn,
+        rook: whiteRook,
+        knight: whiteKnight,
+        bishop: whiteBishop,
+        queen: whiteQueen,
+        king: whiteKing
       },
-      'black': {
-        'pawn': blackPawn,
-        'rook': blackRook,
-        'knight': blackKnight,
-        'bishop': blackBishop,
-        'queen': blackQueen,
-        'king': blackKing
+      black: {
+        pawn: blackPawn,
+        rook: blackRook,
+        knight: blackKnight,
+        bishop: blackBishop,
+        queen: blackQueen,
+        king: blackKing
       }
-    } as const;
-
-    return pieceImages[piece.color][piece.type.toLowerCase() as keyof (typeof pieceImages)['white']];
+    };
+    
+    return pieceImages[piece.color][piece.type];
   };
+
   return (
     <div>
       <div className="player-control">
@@ -234,4 +127,20 @@ export default function ChessBoard() {
       </div>
     </div>
   )
+}
+
+function reconstructPieces(board: any[]) {
+  return board.map(piece => {
+    if (!piece) return null;
+    const color = piece.color;
+    switch (piece.type) {
+      case 'pawn': return new Pawn(color);
+      case 'rook': return new Rook(color);
+      case 'knight': return new Knight(color);
+      case 'bishop': return new Bishop(color);
+      case 'queen': return new Queen(color);
+      case 'king': return new King(color);
+      default: return null;
+    }
+  });
 }
