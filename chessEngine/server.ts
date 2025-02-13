@@ -27,8 +27,15 @@ const games = new Map<string, Game>();
 let disconnectedGames = new Map<string, Game>();
 
 const app = express();
-app.use(cors({origin: ["https://salschess.netlify.app", 'http://localhost:5173'], credentials: true}));
+app.use(cors({
+  origin: ["https://salschess.netlify.app", 'http://localhost:5173'], 
+  credentials: true
+}));
 
+// Add a basic health check route
+app.get('/', (req, res) => {
+  res.send('Chess server is running!');
+});
 
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
@@ -158,6 +165,6 @@ io.on('connection', (socket) => {
     });
 })
 
-server.listen(3000, () => {
-  console.log(`Listening on http://localhost:3000/`)
+server.listen(PORT, () => {
+  console.log(`Listening on http://localhost:${PORT}/`)
 });
