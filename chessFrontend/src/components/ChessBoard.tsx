@@ -51,10 +51,12 @@ export default function ChessBoard() {
     });
 
     socket.on('move_made', ({ board, nextTurn }) => {
+      console.log('Received move_made event:', { board, nextTurn });
       setBoardState(() => {
         const newBoard = new BoardState();
         newBoard.board = reconstructPieces(board.board);
         newBoard.turn = nextTurn;
+        console.log('Updated board state:', newBoard);
         return newBoard;
       });
     });

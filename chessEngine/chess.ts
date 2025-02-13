@@ -1,3 +1,4 @@
+
 export abstract class ChessPiece {
   public color: 'white' | 'black';
   public type: 'pawn' | 'rook' | 'knight' | 'bishop' | 'queen' | 'king';

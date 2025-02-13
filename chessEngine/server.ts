@@ -40,6 +40,7 @@ io.on('connection', (socket) => {
   socket.emit('game_start', globalGame.board);
 
   socket.on('make_move', ({ from, to }) => {
+    console.log("move is being made")
     if (globalGame.board.makeMove(from, to)) {
       io.emit('move_made', {
         board: globalGame.board,
