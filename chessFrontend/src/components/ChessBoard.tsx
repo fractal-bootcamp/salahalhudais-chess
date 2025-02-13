@@ -31,7 +31,7 @@ export default function ChessBoard() {
 
   useEffect(() => {
     // Create socket connection
-    socketRef.current = io("http://localhost:3000/");
+    socketRef.current = io("https://salahalhudais-chess.onrender.com");
     const socket = socketRef.current;
     
     socket.connect();
