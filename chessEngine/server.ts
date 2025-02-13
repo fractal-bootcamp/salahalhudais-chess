@@ -116,7 +116,7 @@ io.on('connection', (socket) => {
           from,
           to,
           gameId,
-          color: player.color,
+          color: player.color,  
           nextTurn: game.board.turn,
           board: game.board
         });
