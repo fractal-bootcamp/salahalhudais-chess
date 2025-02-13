@@ -52,6 +52,11 @@ export default function ChessBoard() {
       });
     });
 
+    socket.on('game_reset', () => {
+      setBoardState(new BoardState());
+      setPlayerColor(null);
+    });
+
     return () => {
       socket.disconnect();
     };

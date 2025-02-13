@@ -24,7 +24,7 @@ io.on('connection', (socket) => {
   const color = currentGame.players.size === 0 ? 'white' : 'black';
   currentGame.players.set(socket.id, color);
   console.log(color);
-  
+
   socket.emit('player_assigned', { color });
   
   // Start game when both players are present
@@ -43,6 +43,18 @@ io.on('connection', (socket) => {
         board: currentGame.board,
         nextTurn: currentGame.board.turn
       });
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Player disconnected:', socket.id);
+    currentGame.players.delete(socket.id);
+    
+    // Reset game state if any player remains
+    if (currentGame.players.size > 0) {
+      currentGame.board = new BoardState();
+      currentGame.players.clear();
+      io.emit('game_reset');
     }
   });
 });
