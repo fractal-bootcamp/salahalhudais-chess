@@ -17,12 +17,13 @@ import { Pawn, Rook, Knight, Bishop, Queen, King } from '../../../chessEngine/ch
 
 type PieceType = 'pawn' | 'rook' | 'knight' | 'bishop' | 'queen' | 'king';
 
-const BACKEND_URL = (() => {
-  const devUrl = 'http://localhost:4000'; 
-  const prodUrl = 'https://salahalhudais-chess.onrender.com'; 
+// const BACKEND_URL = (() => {
+//   const devUrl = 'http://localhost:4000'; 
+//   const prodUrl = 'https://salahalhudais-chess.onrender.com'; 
   
-  return window.location.hostname === 'localhost' ? devUrl : prodUrl;
-})();
+//   return window.location.hostname === 'localhost' ? devUrl : prodUrl;
+// })();
+const BACKEND_URL = import.meta.env.SERVER_URL || "https://salahalhudais-chess-production.up.railway.app"
 
 console.log('Backend URL:', BACKEND_URL);
 
