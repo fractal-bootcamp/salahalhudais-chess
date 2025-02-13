@@ -1,4 +1,4 @@
-import express, { Express, Request, Response } from 'express';
+import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { Server} from "socket.io"
 import http from 'http';
@@ -26,15 +26,15 @@ interface Game {
 const games = new Map<string, Game>();
 
 const app = express();
-app.use(cors({origin: 'http://localhost:5173', credentials: true}));
+app.use(cors({origin: ["https://salschess.netlify.app", 'http://localhost:5173'], credentials: true}));
 
 
 const server = http.createServer(app);
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: ["https://salschess.netlify.app", "http://localhost:5173"],
     methods: ['GET', 'POST'],
     credentials: true, // cookies
   }
@@ -96,30 +96,38 @@ io.on('connection', (socket) => {
       }
     });
 
-    socket.on("make_move", ({ from, to, gameId }) => {
-      // find game
+      socket.on("make_move", ({ from, to, gameId }) => {
+      console.log(`Move request received - from: ${from}, to: ${to}, gameId: ${gameId}`);
+      
       let game = games.get(gameId);
       if (!game) {
-        socket.emit('error', {message: 'Game not found!'});
-        return;
+          console.log('Game not found:', gameId);
+          socket.emit('error', {message: 'Game not found!'});
+          return;
       }
 
-      // find who wants to make a move
       let player = Object.values(game.players).find((p) => p.socketId === socket.id);
       if (!player) {
-        socket.emit("error", {message: "Player not found"});
-        return;
+          console.log('Player not found for socket:', socket.id);
+          socket.emit("error", {message: "Player not found"});
+          return;
       }
 
+      console.log(`Current board turn: ${game.board.turn}, Player color: ${player.color}`);
+      
       if (game.board.makeMove(from, to)) {
-        io.to(gameId).emit('move_made', {
-          from,
-          to,
-          gameId,
-          color: player.color,  
-          nextTurn: game.board.turn,
-          board: game.board
-        });
+          console.log(`Move successful - Emitting move_made event`);
+          io.to(gameId).emit('move_made', {
+              from,
+              to,
+              gameId,
+              color: player.color,  
+              nextTurn: game.board.turn,
+              board: game.board
+          });
+      } else {
+          console.log('Move failed');
+          socket.emit("error", {message: "Invalid move"});
       }
     }) 
     socket.on('disconnect', () => {
@@ -142,6 +150,6 @@ io.on('connection', (socket) => {
     });
 })
 
-server.listen(3000, () => {
-  console.log('Listening on *:3000')
+server.listen(PORT, () => {
+  console.log(`Listening on http://localhost:3000/`)
 });

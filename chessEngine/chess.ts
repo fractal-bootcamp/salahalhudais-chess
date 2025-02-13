@@ -126,9 +126,6 @@ export class Bishop extends ChessPiece implements generateMoves {
 
     let moves: number[] = []
 
-    let col = index % 8;
-    let row = Math.floor(index / 8)
-
     /*
 
     Okay, Diagonal:
@@ -542,7 +539,6 @@ class BoardState {
         return false;
     }
 
-    const capturedPiece = this.board[to];
     if (piece instanceof Pawn) {
         const enPassantRow = piece.color === 'white' ? 3 : 4;
         if (Math.floor(from / 8) === enPassantRow) {
