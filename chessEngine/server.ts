@@ -26,7 +26,7 @@ interface Game {
 const games = new Map<string, Game>();
 
 const app = express();
-app.use(cors({origin: 'http://localhost:5173', credentials: true}));
+app.use(cors({origin: ["https://salschess.netlify.app", 'http://localhost:5173'], credentials: true}));
 
 
 const server = http.createServer(app);
@@ -34,7 +34,7 @@ const PORT = process.env.PORT || 3000;
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: ["https://salschess.netlify.app", "http://localhost:5173"],
     methods: ['GET', 'POST'],
     credentials: true, // cookies
   }
