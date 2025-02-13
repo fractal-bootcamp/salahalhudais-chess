@@ -15,12 +15,16 @@ import blackQueen from '../assets/queen-b.svg'
 import blackKing from '../assets/king-b.svg'
 import { Pawn, Rook, Knight, Bishop, Queen, King } from '../../../chessEngine/chess'
 
-// drone
-// 
-
 type PieceType = 'pawn' | 'rook' | 'knight' | 'bishop' | 'queen' | 'king';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const BACKEND_URL = (() => {
+  const devUrl = 'http://localhost:4000'; 
+  const prodUrl = 'https://salahalhudais-chess.onrender.com'; 
+  
+  return window.location.hostname === 'localhost' ? devUrl : prodUrl;
+})();
+
+console.log('Backend URL:', BACKEND_URL);
 
 export default function ChessBoard() {
   const [boardState, setBoardState] = useState<BoardState>(new BoardState());
@@ -31,6 +35,14 @@ export default function ChessBoard() {
   useEffect(() => {
     const socket = io(BACKEND_URL);
     socketRef.current = socket;
+
+    socket.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+    });
+
+    socket.on('connect', () => {
+      console.log('Socket connected successfully');
+    });
 
     socket.on('player_assigned', ({ color }) => {
       setPlayerColor(color);

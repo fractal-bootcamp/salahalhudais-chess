@@ -2,10 +2,25 @@ import express from 'express';
 import { Server } from "socket.io";
 import http from 'http';
 import cors from 'cors';
-import { BoardState } from './chess.ts';
+import { BoardState } from './chess.js';
+import dotenv from 'dotenv'
+dotenv.config()
 
 const app = express();
+
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST']
+}));
+
+// Add a test route
+app.get('/', (req, res) => {
+  res.send('Chess server is running');
+});
+
 const server = http.createServer(app);
+const PORT = process.env.PORT || 10000
+
 const io = new Server(server, {
   cors: {
     origin: '*',
@@ -59,7 +74,7 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(4000, () => {
-  console.log('Listening on port 4000');
+server.listen(PORT, () => {
+  console.log(`Listening on port ${PORT} `);
 });
 
