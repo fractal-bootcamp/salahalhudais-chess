@@ -29,7 +29,6 @@ console.log('Backend URL:', BACKEND_URL);
 export default function ChessBoard() {
   const [boardState, setBoardState] = useState<BoardState>(new BoardState());
   const [selectedPiece, setSelectedPiece] = useState<number | null>(null);
-  const [playerColor, setPlayerColor] = useState<'white' | 'black' | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
@@ -42,10 +41,6 @@ export default function ChessBoard() {
 
     socket.on('connect', () => {
       console.log('Socket connected successfully');
-    });
-
-    socket.on('player_assigned', ({ color }) => {
-      setPlayerColor(color);
     });
 
     socket.on('game_start', (board) => {
@@ -64,22 +59,15 @@ export default function ChessBoard() {
       });
     });
 
-    socket.on('game_reset', () => {
-      setBoardState(new BoardState());
-      setPlayerColor(null);
-    });
-
     return () => {
       socket.disconnect();
     };
   }, []);
 
   const handleSquareClick = (index: number) => {
-    if (!playerColor || boardState.turn !== playerColor) return;
-    
     if (selectedPiece === null) {
       const piece = boardState.board[index];
-      if (piece?.color === playerColor) setSelectedPiece(index);
+      if (piece?.color === boardState.turn) setSelectedPiece(index);
     } else {
       if (boardState.isValidMove(selectedPiece, index)) {
         socketRef.current?.emit('make_move', {
