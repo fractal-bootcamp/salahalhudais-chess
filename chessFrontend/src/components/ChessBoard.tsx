@@ -20,6 +20,7 @@ import { Pawn, Rook, Knight, Bishop, Queen, King } from '../../../chessEngine/ch
 
 type PieceType = 'pawn' | 'rook' | 'knight' | 'bishop' | 'queen' | 'king';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 export default function ChessBoard() {
   const [boardState, setBoardState] = useState<BoardState>(new BoardState());
@@ -29,7 +30,7 @@ export default function ChessBoard() {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    const socket = io("https://salahalhudais-chess.onrender.com");
+    const socket = io(BACKEND_URL);
     socketRef.current = socket;
 
     socket.on('player_assigned', ({ color, gameId }) => {

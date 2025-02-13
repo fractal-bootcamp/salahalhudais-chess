@@ -23,8 +23,13 @@ interface Game {
 }
 
 const app = express();
+
+const FRONTEND_URLS = [
+  process.env.FRONTEND_DEV_URL, , process.env.FRONTEND_URL]
+
+// Express CORS
 app.use(cors({
-  origin: ["http://salschess.netlify.app", 'http://localhost:5173'],
+  origin: FRONTEND_URLS,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -39,9 +44,9 @@ const PORT = process.env.PORT || 4000
 
 const io = new Server(server, {
   cors: {
-    origin: ["https://salschess.netlify.app", "http://localhost:5173"],
+    origin: FRONTEND_URLS,
     methods: ['GET', 'POST'],
-    credentials: true, // cookies
+    credentials: true,
   }
 });
 
@@ -73,8 +78,10 @@ io.on('connection', (socket) => {
     console.log(availableGame);
     socket.join(availableGame.gameId);
     socket.emit("player_assigned", { color, gameId: availableGame.gameId });
+
+    
     if (availableGame.players.white && availableGame.players.black) {
-      io.to(availableGame.gameId).emit('game_start', {
+      io.emit('game_start', {
         board: availableGame.board,
         players: availableGame.players
       });
@@ -93,7 +100,7 @@ io.on('connection', (socket) => {
     if (!player || game.board.turn !== player.color) return;
 
     if (game.board.makeMove(from, to)) {
-      io.to(gameId).emit('move_made', {
+      io.emit('move_made', {
         from,
         to,
         board: game.board,
