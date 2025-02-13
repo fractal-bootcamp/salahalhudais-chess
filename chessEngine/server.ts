@@ -1,138 +1,53 @@
 import express from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import { Server} from "socket.io"
+import { Server } from "socket.io";
 import http from 'http';
 import cors from 'cors';
-import dotenv from "dotenv";
 import { BoardState } from './chess.ts';
 
-dotenv.config();
-
-interface Player {
-  socketId: string;
-  color: 'white' | 'black';
-  userName?: string;
-}
-interface Game {
-  gameId: string;
-  board: BoardState;
-  players: {
-    white?: Player;
-    black?: Player;
-  };
-}
-
 const app = express();
-
-const FRONTEND_URLS = [
-  process.env.FRONTEND_DEV_URL,
-  process.env.FRONTEND_URL
-];
-
-// Express CORS
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin || FRONTEND_URLS.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
-
-app.get('/', (req, res) => {
-  res.send('Chess server is running!');
-});
-
 const server = http.createServer(app);
-const PORT = process.env.PORT || 4000
-
 const io = new Server(server, {
   cors: {
-    origin: function(origin, callback) {
-      if (!origin || FRONTEND_URLS.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    methods: ['GET', 'POST'],
-    credentials: true,
+    origin: '*',
+    methods: ['GET', 'POST']
   }
 });
 
-const games = new Map<string, Game>();
+let currentGame = {
+  board: new BoardState(),
+  players: new Map<string, 'white' | 'black'>()
+};
 
 io.on('connection', (socket) => {
-  console.log("New connection:", socket.id);
+  console.log(socket.id);
+  // Assign colors
+  const color = currentGame.players.size === 0 ? 'white' : 'black';
+  currentGame.players.set(socket.id, color);
+  console.log(color);
   
-  socket.on('join_game', () => {
-    let availableGame = Array.from(games.values()).find(game => 
-      !game.players.white || !game.players.black
-    );
+  socket.emit('player_assigned', { color });
+  
+  // Start game when both players are present
+  if (currentGame.players.size === 2) {
+    io.emit('game_start', currentGame.board);
+  }
 
-    if (!availableGame) {
-      const gameId = uuidv4();
-      availableGame = {
-        gameId,
-        board: new BoardState(),
-        players: {}
-      };
-      games.set(gameId, availableGame);
-    }
-
-    const color = !availableGame.players.white ? 'white' : 'black';
-    availableGame.players[color] = {
-      socketId: socket.id,
-      color
-    };
-    console.log(availableGame);
-    socket.join(availableGame.gameId);
-    socket.emit("player_assigned", { color, gameId: availableGame.gameId });
-
+  socket.on('make_move', ({ from, to }) => {
+    console.log(from, to);
+    if (currentGame.players.get(socket.id) !== currentGame.board.turn) return;
     
-    if (availableGame.players.white && availableGame.players.black) {
-      io.emit('game_start', {
-        board: availableGame.board,
-        players: availableGame.players
-      });
-    }
-  });
-
-  socket.on("make_move", ({ from, to, gameId }) => {
-    console.log(from, to,gameId);
-    const game = games.get(gameId);
-    if (!game) {
-      console.log(`Game ${gameId} not found`);
-      return;
-    }
-    
-    const player = Object.values(game.players).find(p => p.socketId === socket.id);
-    if (!player || game.board.turn !== player.color) return;
-
-    if (game.board.makeMove(from, to)) {
+    if (currentGame.board.makeMove(from, to)) {
       io.emit('move_made', {
         from,
         to,
-        board: game.board,
-        nextTurn: game.board.turn
+        board: currentGame.board,
+        nextTurn: currentGame.board.turn
       });
     }
   });
-
-  socket.on('disconnect', () => {
-    games.forEach(game => {
-      if (game.players.white?.socketId === socket.id || game.players.black?.socketId === socket.id) {
-        games.delete(game.gameId);
-      }
-    });
-  });
 });
 
-server.listen(PORT, () => {
-  console.log(`Listening on http://localhost:${PORT}/`)
+server.listen(4000, () => {
+  console.log('Listening on port 4000');
 });
 

@@ -26,19 +26,17 @@ export default function ChessBoard() {
   const [boardState, setBoardState] = useState<BoardState>(new BoardState());
   const [selectedPiece, setSelectedPiece] = useState<number | null>(null);
   const [playerColor, setPlayerColor] = useState<'white' | 'black' | null>(null);
-  const [gameId, setGameId] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
     const socket = io(BACKEND_URL);
     socketRef.current = socket;
 
-    socket.on('player_assigned', ({ color, gameId }) => {
+    socket.on('player_assigned', ({ color }) => {
       setPlayerColor(color);
-      setGameId(gameId);
     });
 
-    socket.on('game_start', ({ board }) => {
+    socket.on('game_start', (board) => {
       const newBoard = new BoardState();
       newBoard.board = reconstructPieces(board.board);
       newBoard.turn = board.turn;
@@ -54,15 +52,13 @@ export default function ChessBoard() {
       });
     });
 
-    socket.emit('join_game');
-
     return () => {
       socket.disconnect();
     };
   }, []);
 
   const handleSquareClick = (index: number) => {
-    if (!playerColor || !gameId || boardState.turn !== playerColor) return;
+    if (!playerColor || boardState.turn !== playerColor) return;
     
     if (selectedPiece === null) {
       const piece = boardState.board[index];
@@ -71,8 +67,7 @@ export default function ChessBoard() {
       if (boardState.isValidMove(selectedPiece, index)) {
         socketRef.current?.emit('make_move', {
           from: selectedPiece,
-          to: index,
-          gameId
+          to: index
         });
       }
       setSelectedPiece(null);
