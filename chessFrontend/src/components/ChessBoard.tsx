@@ -29,7 +29,7 @@ export default function ChessBoard() {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    const socket = io("http://localhost:4000");
+    const socket = io("https://salahalhudais-chess.onrender.com");
     socketRef.current = socket;
 
     socket.on('player_assigned', ({ color, gameId }) => {
