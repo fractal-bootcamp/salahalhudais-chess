@@ -25,61 +25,42 @@ export default function ChessBoard() {
   const [boardState, setBoardState] = useState<BoardState>(new BoardState());
   const [selectedPiece, setSelectedPiece] = useState<number | null>(null);
   const [playerColor, setPlayerColor] = useState<'white' | 'black' | null>(null);
-  const [gameId, setGameId] = useState< string | null>(null);
+  const [gameId, setGameId] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
-
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // Create socket connection
-    socketRef.current = io("https://salahalhudais-chess.onrender.com");
-    const socket = socketRef.current;
-    
-    socket.connect();
-    socket.emit('join_game');
-
-    const handlePlayerAssigned = ({ color, gameId }: any) => {
-      console.log(`Assigned color: ${color}, Game ID: ${gameId}`);
-      setPlayerColor(color);
-      setGameId(gameId);
-    };
-
-    const handleGameStart = ({ board, players }: any) => {
-      console.log("Game started!", players);
-      const newBoard = new BoardState();
-      newBoard.board = board.board.map((piece: any) => {
-        if (!piece) return null;
-        switch (piece.type) {
-          case 'pawn':
-            return new Pawn(piece.color);
-          case 'rook':
-            return new Rook(piece.color);
-          case 'knight':
-            return new Knight(piece.color);
-          case 'bishop':
-            return new Bishop(piece.color);
-          case 'queen':
-            return new Queen(piece.color);
-          case 'king':
-            return new King(piece.color);
-          default:
-            return null;
-        }
+    // Only create a new connection if one doesn't exist
+    if (!socketRef.current && !isConnected) {
+      socketRef.current = io("https://salahalhudais-chess.onrender.com", {
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000
       });
-      setBoardState(newBoard);
-    };
-
-    const handleMoveMade = ({ color, nextTurn, board, from, to }: any) => {
-      console.log(`Move made: ${color} moved from ${from} to ${to}`);
-      console.log(`Next turn: ${nextTurn}`);
       
-      setBoardState(prevBoard => {
-        const newBoardState = new BoardState();
-        if (!board || !Array.isArray(board.board)) {
-          console.error('Invalid board state received:', board);
-          return prevBoard;
-        }
-        
-        newBoardState.board = board.board.map((piece: any) => {
+      const socket = socketRef.current;
+
+      socket.on('connect', () => {
+        console.log('Connected with ID:', socket.id);
+        setIsConnected(true);
+        socket.emit('join_game');
+      });
+
+      socket.on('disconnect', () => {
+        console.log('Disconnected from server');
+        setIsConnected(false);
+      });
+
+      const handlePlayerAssigned = ({ color, gameId }: any) => {
+        console.log(`Assigned color: ${color}, Game ID: ${gameId}`);
+        setPlayerColor(color);
+        setGameId(gameId);
+      };
+
+      const handleGameStart = ({ board, players }: any) => {
+        console.log("Game started!", players);
+        const newBoard = new BoardState();
+        newBoard.board = board.board.map((piece: any) => {
           if (!piece) return null;
           switch (piece.type) {
             case 'pawn':
@@ -98,27 +79,61 @@ export default function ChessBoard() {
               return null;
           }
         });
-        newBoardState.turn = nextTurn;
-        return newBoardState;
-      });
-    };
+        setBoardState(newBoard);
+      };
 
-    const handlePlayerDisconnected = () => {
-      // Handle disconnection logic
-    };
-    socket.on('player_assigned', handlePlayerAssigned);
-    socket.on('game_start', handleGameStart);
-    socket.on('move_made', handleMoveMade);
-    socket.on('player_disconnected', handlePlayerDisconnected);
+      const handleMoveMade = ({ color, nextTurn, board, from, to }: any) => {
+        console.log(`Move made: ${color} moved from ${from} to ${to}`);
+        console.log(`Next turn: ${nextTurn}`);
+        
+        setBoardState(prevBoard => {
+          const newBoardState = new BoardState();
+          if (!board || !Array.isArray(board.board)) {
+            console.error('Invalid board state received:', board);
+            return prevBoard;
+          }
+          
+          newBoardState.board = board.board.map((piece: any) => {
+            if (!piece) return null;
+            switch (piece.type) {
+              case 'pawn':
+                return new Pawn(piece.color);
+              case 'rook':
+                return new Rook(piece.color);
+              case 'knight':
+                return new Knight(piece.color);
+              case 'bishop':
+                return new Bishop(piece.color);
+              case 'queen':
+                return new Queen(piece.color);
+              case 'king':
+                return new King(piece.color);
+              default:
+                return null;
+            }
+          });
+          newBoardState.turn = nextTurn;
+          return newBoardState;
+        });
+      };
+
+      const handlePlayerDisconnected = () => {
+        // Handle disconnection logic
+      };
+      socket.on('player_assigned', handlePlayerAssigned);
+      socket.on('game_start', handleGameStart);
+      socket.on('move_made', handleMoveMade);
+      socket.on('player_disconnected', handlePlayerDisconnected);
+    }
 
     return () => {
-      socket.off('player_assigned', handlePlayerAssigned);
-      socket.off('game_start', handleGameStart);
-      socket.off('move_made', handleMoveMade);
-      socket.off('player_disconnected', handlePlayerDisconnected);
-      socket.disconnect();
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+        setIsConnected(false);
+      }
     };
-  }, []);
+  }, [isConnected]);
 
   useEffect(() => {
     console.log("Turn changed:", boardState.turn);
