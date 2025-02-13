@@ -24,7 +24,7 @@ interface Game {
 
 const app = express();
 app.use(cors({
-  origin: ["https://salschess.netlify.app", 'http://localhost:5173'],
+  origin: ["http://salschess.netlify.app", 'http://localhost:5173'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -82,6 +82,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on("make_move", ({ from, to, gameId }) => {
+    console.log(from, to,gameId);
     const game = games.get(gameId);
     if (!game) {
       console.log(`Game ${gameId} not found`);
