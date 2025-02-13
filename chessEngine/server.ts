@@ -4,8 +4,9 @@ import { Server} from "socket.io"
 import http from 'http';
 import cors from 'cors';
 import dotenv from "dotenv";
-import { BoardState } from './setup';
-import { isBooleanObject } from 'util/types';
+import { BoardState } from './chess';
+
+dotenv.config();
 
 interface Player {
   socketId: string;
@@ -25,11 +26,7 @@ interface Game {
 const games = new Map<string, Game>();
 
 const app = express();
-<<<<<<< Updated upstream
-app.use(cors({origin: 'http://localhost:5174', credentials: true}));
-=======
-app.use(cors({origin: process.env.FRONTEND_URL || 'http://localhost:5173', credentials: true}));
->>>>>>> Stashed changes
+app.use(cors({origin: 'http://localhost:5173', credentials: true}));
 
 
 const server = http.createServer(app);
@@ -37,7 +34,7 @@ const PORT = 3000;
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5174",
+    origin: "http://localhost:5173",
     methods: ['GET', 'POST'],
     credentials: true, // cookies
   }
@@ -79,7 +76,7 @@ io.on('connection', (socket) => {
       }
       // Okay, we've got a game, whether it existed or it didn't...
       // Now set the player
-      const color = game.players.white ? 'white' : 'black';
+      const color = !game.players.white ? 'white' : 'black';
       game.players[color] = {
         socketId: socket.id,
         color
@@ -100,23 +97,29 @@ io.on('connection', (socket) => {
     });
 
     socket.on("make_move", ({ from, to, gameId }) => {
-
       // find game
       let game = games.get(gameId);
       if (!game) {
-        socket.emit('error', {message: 'Game not found!'})
+        socket.emit('error', {message: 'Game not found!'});
+        return;
       }
 
       // find who wants to make a move
-      let player = Object.values(game.players).find((p) => p.socketId = socket.id);
+      let player = Object.values(game.players).find((p) => p.socketId === socket.id);
       if (!player) {
         socket.emit("error", {message: "Player not found"});
+        return;
       }
 
-      if (game?.board.makeMove(from, to)) {
+      if (game.board.makeMove(from, to)) {
         io.to(gameId).emit('move_made', {
-          from, to, gameId, color: player?.color,
-        })
+          from,
+          to,
+          gameId,
+          color: player.color,  
+          nextTurn: game.board.turn,
+          board: game.board
+        });
       }
     }) 
     socket.on('disconnect', () => {

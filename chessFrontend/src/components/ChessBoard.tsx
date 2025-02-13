@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BoardState } from '../../../Chess Engine/src/setup'
+import { BoardState } from '../../../chessEngine/chess'
 import { io } from "socket.io-client"
 import whitePawn from '../assets/pawn-w.svg'
 import whiteRook from '../assets/rook-w.svg'
@@ -13,7 +13,7 @@ import blackKnight from '../assets/knight-b.svg'
 import blackBishop from '../assets/bishop-b.svg'
 import blackQueen from '../assets/queen-b.svg'
 import blackKing from '../assets/king-b.svg'
-import { Pawn, Rook, Knight, Bishop, Queen, King } from '../../../Chess Engine/src/setup'
+import { Pawn, Rook, Knight, Bishop, Queen, King } from '../../../chessEngine/chess'
 
 // drone
 // 
@@ -81,7 +81,12 @@ export default function ChessBoard() {
       console.log(`${color} has made a move, next turn: ${nextTurn}`);
       setBoardState(prevBoard => {
         const newBoardState = new BoardState();
-        newBoardState.board = board.map((piece: any) => {
+        if (!board || !Array.isArray(board.board)) {
+          console.error('Invalid board state received:', board);
+          return prevBoard;
+        }
+        
+        newBoardState.board = board.board.map((piece: any) => {
           if (!piece) return null;
           switch (piece.type) {
             case 'pawn':
