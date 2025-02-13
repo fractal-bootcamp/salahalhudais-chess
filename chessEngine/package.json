@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon --exec node --loader ts-node/esm server.ts",
     "build": "bun build server.ts --outdir dist",
-    "start": "node dist/server.js",
+    "start": "bun run server.ts",
     "start:bun": "bun run server.ts"
   },
   "dependencies": {
