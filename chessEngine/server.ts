@@ -1,4 +1,4 @@
-import express, { Express, Request, Response } from 'express';
+import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { Server} from "socket.io"
 import http from 'http';
@@ -30,7 +30,7 @@ app.use(cors({origin: 'http://localhost:5173', credentials: true}));
 
 
 const server = http.createServer(app);
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 const io = new Server(server, {
   cors: {
@@ -142,6 +142,6 @@ io.on('connection', (socket) => {
     });
 })
 
-server.listen(3000, () => {
-  console.log('Listening on *:3000')
+server.listen(PORT, () => {
+  console.log(`Listening on http://localhost:3000/${PORT}`)
 });

@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon --exec node --loader ts-node/esm server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js"
+    "build": "bun build server.ts --outdir dist",
+    "start": "node dist/server.js",
+    "start:bun": "bun run server.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -20,6 +21,8 @@
     "@types/node": "^20.11.24",
     "nodemon": "^3.1.0",
     "ts-node": "^10.9.2",
-    "typescript": "~5.7.2"
-  }
+    "typescript": "~5.7.2",
+    "@types/bun": "latest"
+  },
+  "module": "index.ts"
 }

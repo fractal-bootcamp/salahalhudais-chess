@@ -20,7 +20,7 @@ import { Pawn, Rook, Knight, Bishop, Queen, King } from '../../../chessEngine/ch
 
 type PieceType = 'pawn' | 'rook' | 'knight' | 'bishop' | 'queen' | 'king';
 
-const socket = io("http://localhost:3000");
+const socket = io("https://salahalhudais-chess.onrender.com");
 
 // on connection it will initialize a game and automatically set a user to a player
 socket.on('connect', () => {
@@ -46,13 +46,13 @@ export default function ChessBoard() {
       socket.emit('join_game');
     });
 
-    const handlePlayerAssigned = ({ color, gameId }) => {
+    const handlePlayerAssigned = ({ color, gameId }: any) => {
       console.log(`Assigned color: ${color}, Game ID: ${gameId}`);
       setPlayerColor(color);
       setGameId(gameId);
     };
 
-    const handleGameStart = ({ gameId, board, players }) => {
+    const handleGameStart = ({ board, players }: any) => {
       console.log("Game started!", players);
       const newBoard = new BoardState();
       newBoard.board = board.board.map((piece: any) => {
@@ -77,7 +77,7 @@ export default function ChessBoard() {
       setBoardState(newBoard);
     };
 
-    const handleMoveMade = ({ from, to, gameId, color, nextTurn, board }) => {
+    const handleMoveMade = ({ color, nextTurn, board }: any) => {
       console.log(`${color} has made a move, next turn: ${nextTurn}`);
       setBoardState(prevBoard => {
         const newBoardState = new BoardState();
