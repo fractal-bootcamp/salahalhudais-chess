@@ -542,7 +542,7 @@ class BoardState {
     return fromCol !== toCol && this.board[to] === null;
   }
 
-  private updatePawnState(newPawnStates: Map<number, any>, from: number, to: number, distance: number): void {
+  private updatePawnState(newPawnStates: Map<number, any>, to: number, distance: number): void {
     // Set state for moved pawn
     newPawnStates.set(to, {
       hasMoved: true,
@@ -583,12 +583,12 @@ class BoardState {
       
       // Handle pawn promotion
       if (this.isPawnPromotion(piece, to)) {
-        newBoard[to] = new Queen(piece.color); // Promote to queen
+        newBoard[to] = new Queen(piece.color);
       } else {
         newBoard[to] = piece;
       }
       
-      this.updatePawnState(newPawnStates, from, to, distance);
+      this.updatePawnState(newPawnStates, to, distance);
     } else {
       newBoard[to] = piece;
     }
