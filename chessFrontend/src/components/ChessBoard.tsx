@@ -1,5 +1,14 @@
 import { useEffect, useState, useRef } from 'react'
-import { BoardState } from '../../../chessEngine/chess'
+import { 
+  BoardState, 
+  ChessPiece,
+  Pawn,
+  Rook,
+  Knight,
+  Bishop,
+  Queen,
+  King 
+} from '../../../chessEngine/chess'
 import { io, Socket } from "socket.io-client"
 import whitePawn from '../assets/pawn-w.svg'
 import whiteRook from '../assets/rook-w.svg'
@@ -13,7 +22,6 @@ import blackKnight from '../assets/knight-b.svg'
 import blackBishop from '../assets/bishop-b.svg'
 import blackQueen from '../assets/queen-b.svg'
 import blackKing from '../assets/king-b.svg'
-import { Pawn, Rook, Knight, Bishop, Queen, King } from '../../../chessEngine/chess'
 
 type PieceType = 'pawn' | 'rook' | 'knight' | 'bishop' | 'queen' | 'king';
 
@@ -23,13 +31,13 @@ type PieceType = 'pawn' | 'rook' | 'knight' | 'bishop' | 'queen' | 'king';
   
 //   return window.location.hostname === 'localhost' ? devUrl : prodUrl;
 // })();
-// const BACKEND_URL = import.meta.env.VITE_SERVER_URL || "https://salahalhudais-chess-production.up.railway.app"
-const BACKEND_URL = "https://salahalhudais-chess-production.up.railway.app"
+const BACKEND_URL = import.meta.env.VITE_SERVER_URL || "https://salahalhudais-chess-production.up.railway.app"
+//const BACKEND_URL = "https://salahalhudais-chess-production.up.railway.app"
 
 console.log('Backend URL:', BACKEND_URL);
 
 export default function ChessBoard() {
-  const [boardState, setBoardState] = useState<BoardState>(new BoardState());
+  const [boardState, setBoardState] = useState<BoardState>(BoardState.createNew());
   const [selectedPiece, setSelectedPiece] = useState<number | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
@@ -45,22 +53,31 @@ export default function ChessBoard() {
       console.log('Socket connected successfully');
     });
 
-    socket.on('game_start', (board) => {
-      const newBoard = new BoardState();
-      newBoard.board = reconstructPieces(board.board);
-      newBoard.turn = board.turn;
-      setBoardState(newBoard);
+    socket.on('game_start', ({ board, turn, pawnStates }) => {
+      const newState = BoardState.createNewState(
+        reconstructPieces(board),
+        turn,
+        true,  // Default castling privileges
+        true,
+        new Map(Object.entries(pawnStates).map(([k,v]) => [
+          parseInt(k), 
+          v as { hasMoved: boolean, twoStep: boolean }
+        ]))
+      );
+      setBoardState(newState);
     });
 
-    socket.on('move_made', ({ board, nextTurn }) => {
-      console.log('Received move_made event:', { board, nextTurn });
-      setBoardState(() => {
-        const newBoard = new BoardState();
-        newBoard.board = reconstructPieces(board.board);
-        newBoard.turn = nextTurn;
-        console.log('Updated board state:', newBoard);
-        return newBoard;
-      });
+    socket.on('move_made', ({ board, turn, pawnStates }) => {
+      setBoardState(BoardState.createNewState(
+        reconstructPieces(board),
+        turn,
+        true,  // Castling privileges need to come from server
+        true,
+        new Map(Object.entries(pawnStates).map(([k,v]) => [
+          parseInt(k), 
+          v as { hasMoved: boolean, twoStep: boolean }
+        ]))
+      ));
     });
 
     return () => {
@@ -70,14 +87,11 @@ export default function ChessBoard() {
 
   const handleSquareClick = (index: number) => {
     if (selectedPiece === null) {
-      const piece = boardState.board[index];
+      const piece = boardState.getBoard()[index];
       if (piece?.color === boardState.turn) setSelectedPiece(index);
     } else {
-      if (boardState.isValidMove(selectedPiece, index)) {
-        socketRef.current?.emit('make_move', {
-          from: selectedPiece,
-          to: index
-        });
+      if (boardState.makeMove(selectedPiece, index)) {
+        socketRef.current?.emit('make_move', { from: selectedPiece, to: index });
       }
       setSelectedPiece(null);
     }
@@ -114,7 +128,7 @@ export default function ChessBoard() {
         <p>Current Player: {boardState.turn}</p>
       </div>
       <div className="chess-board">
-        {boardState.board.map((piece, index) => {
+        {boardState.getBoard().map((piece, index) => {
           const row = 7 - Math.floor(index / 8);
           const col = index % 8;
           const isBlack = (row + col) % 2 === 1;
@@ -134,7 +148,7 @@ export default function ChessBoard() {
   )
 }
 
-function reconstructPieces(board: any[]) {
+function reconstructPieces(board: any[]): Array<InstanceType<typeof ChessPiece> | null> {
   return board.map(piece => {
     if (!piece) return null;
     const color = piece.color;

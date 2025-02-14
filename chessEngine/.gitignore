@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+chessCLI.ts
+chessGame.ts
+chessV2.ts
+

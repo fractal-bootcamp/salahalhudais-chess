@@ -2,7 +2,7 @@ import express from 'express';
 import { Server } from "socket.io";
 import http from 'http';
 import cors from 'cors';
-import { BoardState } from './chess.js';
+import { BoardState } from './chess';
 import dotenv from 'dotenv'
 dotenv.config()
 
@@ -30,22 +30,35 @@ const io = new Server(server, {
 
 // Single global game state
 const globalGame = {
-  board: new BoardState()
+  board: BoardState.createNew()
 };
 
 io.on('connection', (socket) => {
   console.log('Player connected:', socket.id);
   
-  // Send current game state to new player
-  socket.emit('game_start', globalGame.board);
+  // Send serialized game state
+  socket.emit('game_start', {
+    board: globalGame.board.getBoard(),
+    turn: globalGame.board.turn,
+    pawnStates: Object.fromEntries(globalGame.board.pawnStates)
+  });
 
   socket.on('make_move', ({ from, to }) => {
-    console.log("move is being made")
-    if (globalGame.board.makeMove(from, to)) {
-      io.emit('move_made', {
-        board: globalGame.board,
-        nextTurn: globalGame.board.turn
-      });
+    try {
+      const newState = globalGame.board.makeMove(from, to);
+      
+      if (newState) {
+        globalGame.board = newState;
+        
+        io.emit('move_made', {
+          board: newState.getBoard(),
+          turn: newState.turn,
+          pawnStates: Object.fromEntries(newState.pawnStates)
+        });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Invalid move';
+      socket.emit('move_error', message);
     }
   });
 
