@@ -22,69 +22,58 @@ class Pawn extends ChessPiece implements generateMoves {
   }
 
   generate(board: BoardState, index: number): number[] {
-    // Generate a bunch of possible moves that can be made from the current board State. We can then use this as a prefix
-    // to every move. For every piece, it will contain it's own state of possible moves. 
-
-
-    // Need to do some validation checks afterwards
-
     let moves: number[] = [];
-
-    // missing en Passante
-    // missing taking enemy pawn if diagonal
-    if(this.color == "white") {
+    
+    if(this.color === "white") {
       if (board.getBoard()[index - 8] === null) {
         moves.push(index - 8);
+        if(!this.hasMoved && board.getBoard()[index - 16] === null) {
+          moves.push(index - 16);
+        }
       }
 
-      // En Passante
+      if (board.getBoard()[index - 7]?.color === 'black') {
+        moves.push(index - 7);
+      }
+      if (board.getBoard()[index - 9]?.color === 'black') {
+        moves.push(index - 9);
+      }
+
       if (board.getBoard()[index + 1]?.color === 'black' &&
           board.getBoard()[index + 1] instanceof Pawn &&
           (board.getBoard()[index + 1] as Pawn).justMadeTwoSquareMove) {
             moves.push(index - 7);
       }
-      if (board.getBoard()[index -1]?.color === 'black' &&
-          board.getBoard()[index -1] instanceof Pawn &&
+      if (board.getBoard()[index - 1]?.color === 'black' &&
+          board.getBoard()[index - 1] instanceof Pawn &&
           (board.getBoard()[index - 1] as Pawn).justMadeTwoSquareMove) {
             moves.push(index - 9);
       }
 
-      // Diagonals
-      if (board.getBoard()[index - 7]?.color !== this.color) {
-        moves.push(index - 7);
-      }
-      if (board.getBoard()[index - 9]?.color !== this.color) {
-        moves.push(index - 9);
-      }
-
-      if(!(this.hasMoved) && board.getBoard()[index - 16] === null) {
-        moves.push(index - 16);
-      }
-
-    } else if(this.color === "black") {
-        if (board.getBoard()[index + 8] === null) {
-          moves.push(index + 8);
-        }
-        if(!(this.hasMoved) && board.getBoard()[index + 16] === null) {
+    } else { 
+      if (board.getBoard()[index + 8] === null) {
+        moves.push(index + 8);
+        if(!this.hasMoved && board.getBoard()[index + 16] === null) {
           moves.push(index + 16);
         }
-        if (board.getBoard()[index + 7]?.color !== this.color) {
-          moves.push(index + 7);
-        }
-        if (board.getBoard()[index + 9]?.color !== this.color) {
-          moves.push(index + 9);
-        }
-        // En Passante
-        if (board.getBoard()[index + 1]?.color === 'white' &&
-            board.getBoard()[index + 1] instanceof Pawn &&
-            (board.getBoard()[index + 1] as Pawn).justMadeTwoSquareMove) {
-              moves.push(index + 9);
-        }
-        if (board.getBoard()[index -1]?.color === 'white' &&
-            board.getBoard()[index -1] instanceof Pawn &&
-            (board.getBoard()[index - 1] as Pawn).justMadeTwoSquareMove) {
-              moves.push(index + 7);
-        }
+      }
+
+      if (board.getBoard()[index + 7]?.color === 'white') {
+        moves.push(index + 7);
+      }
+      if (board.getBoard()[index + 9]?.color === 'white') {
+        moves.push(index + 9);
+      }
+      if (board.getBoard()[index + 1]?.color === 'white' &&
+          board.getBoard()[index + 1] instanceof Pawn &&
+          (board.getBoard()[index + 1] as Pawn).justMadeTwoSquareMove) {
+            moves.push(index + 9);
+      }
+      if (board.getBoard()[index - 1]?.color === 'white' &&
+          board.getBoard()[index - 1] instanceof Pawn &&
+          (board.getBoard()[index - 1] as Pawn).justMadeTwoSquareMove) {
+            moves.push(index + 7);
+      }
     }
     return moves;
   }
@@ -130,7 +119,7 @@ class Bishop extends ChessPiece implements generateMoves {
   }
 
   generate(board: BoardState, index: number): number[] {
-    // Generate a bunch of possible moves that can be made from the current board State. We can then use this as a prefix
+    x Generate a bunch of possible moves that can be made from the current board State. We can then use this as a prefix
     // to every move. For every piece, it will contain it's own state of possible moves.
     
 
@@ -192,34 +181,43 @@ class Rook extends ChessPiece implements generateMoves {
   }
 
   generate(board: BoardState, index: number): number[] {
-    // Take vertical and horizontal difference for every direction
-
-    /*
-    7-5 => down 3
-    5- 0 => up 5
-    */
-    let row = 8;
     let moves: number[] = [];
     const currentCol = index % 8;
     const currentRow = Math.floor(index / 8);
     for (let col = 0; col < 8; col++) {
-      if (col === currentCol) continue; 
-      const newIndex = currentRow * 8 + col;
-      const targetPiece = board.getBoard()[newIndex];
-      if (targetPiece?.color === this.color) break;
-      
-      moves.push(newIndex);
-      if (targetPiece !== null) break;
+        if (col === currentCol) continue;
+        const newIndex = currentRow * 8 + col;
+        const targetPiece = board.getBoard()[newIndex];
+        if (targetPiece?.color === this.color) {
+            if (col < currentCol) continue;
+            else break;
+        }
+        
+        moves.push(newIndex);
+        
+        if (targetPiece !== null) {
+            if (col < currentCol) continue;
+            else break;
+        }
+    }
+    for (let row = 0; row < 8; row++) {
+        if (row === currentRow) continue;
+        const newIndex = row * 8 + currentCol;
+        const targetPiece = board.getBoard()[newIndex];
+        
+        if (targetPiece?.color === this.color) {
+            if (row < currentRow) continue;
+            else break;
+        }
+        
+        moves.push(newIndex);
+        
+        if (targetPiece !== null) {
+            if (row < currentRow) continue;
+            else break;
+        }
     }
 
-    for (let row = 0; row < 8; row++) {
-      if (row === currentRow) continue;
-      const newIndex = row * 8 + currentCol;
-      const targetPiece = board.getBoard()[newIndex];
-      if (targetPiece?.color === this.color) break;
-      moves.push(newIndex);
-      if (targetPiece !== null) break;
-    }
     return moves;
   }
 }
@@ -230,56 +228,66 @@ class Queen extends ChessPiece implements generateMoves {
   }
 
   generate(board: BoardState, index: number): number[] {
-    // Generate a bunch of possible moves that can be made from the current board State. We can then use this as a prefix
-    // to every move. For every piece, it will contain it's own state of possible moves.
-    /*
-    Queen does everything a kings, rooks and bishops do.
-    You can simplify this to rooks and bishops
-    So handle rooks, then bishops individually
-    */
-   let moves: number[] = [];
-   const currentCol = index;
-   const currentRow = Math.floor(index / 8);
-
-   for(let col = 0; col < 8; col++) {
-    if (col === currentCol) continue;
-    const newIndex = currentRow * 8 + col
-    const targetPiece = board.getBoard()[newIndex];
-    if (targetPiece?.color === this.color) break;
-    moves.push(newIndex);
-    if(targetPiece !== null) break;
-   }
-
-   for(let row = 0; row < 8; row++) {
-    if(row === currentRow) continue;
-    const newIndex = row * 8 + currentCol;
-    const targetPiece = board.getBoard()[newIndex];
-    if(targetPiece?.color === this.color) break;
-    moves.push(newIndex);
-    if (targetPiece !== null) break;
-   }
-
-   const directions = [
-    [-1, -1], [1, -1], [-1, 1], [1,1]
-   ];
-
-   for (let [dx, dy] of directions) {
-    let newCol = currentCol;
-    let newRow = currentRow;
-
-    while(true) {
-      newCol += dx;
-      newRow += dy;
-
-      if(newCol < 0 || newCol > 7 || newRow < 0 || newRow > 7) break;
-      const newIndex = newRow * 8 + newCol;
-      const targetPiece = board.getBoard()[newIndex];
-      if (targetPiece?.color === this.color) break;
-      moves.push(newIndex);
-      if(targetPiece !== null) break; 
+    let moves: number[] = [];
+    const currentCol = index % 8;
+    const currentRow = Math.floor(index / 8);
+    for (let col = 0; col < 8; col++) {
+        if (col === currentCol) continue;
+        const newIndex = currentRow * 8 + col;
+        const targetPiece = board.getBoard()[newIndex];
+        if (targetPiece?.color === this.color) {
+            if (col < currentCol) continue;
+            else break;
+        }
+        
+        moves.push(newIndex);
+        if (targetPiece !== null) {
+            if (col < currentCol) continue;
+            else break;
+        }
     }
-   }
-      
+
+    for (let row = 0; row < 8; row++) {
+        if (row === currentRow) continue;
+        const newIndex = row * 8 + currentCol;
+        const targetPiece = board.getBoard()[newIndex];
+        if (targetPiece?.color === this.color) {
+            if (row < currentRow) continue; 
+            else break;
+        }
+        
+        moves.push(newIndex);
+        if (targetPiece !== null) {
+            if (row < currentRow) continue;
+            else break;
+        }
+    }
+    const directions = [
+        [-1, -1],
+        [-1, 1],  
+        [1, -1],
+        [1, 1]    
+    ];
+
+    for (const [rowDir, colDir] of directions) {
+        let newRow = currentRow + rowDir;
+        let newCol = currentCol + colDir;
+
+        while (newRow >= 0 && newRow < 8 && newCol >= 0 && newCol < 8) {
+            const newIndex = newRow * 8 + newCol;
+            const targetPiece = board.getBoard()[newIndex];
+
+            if (targetPiece?.color === this.color) break;
+            
+            moves.push(newIndex);
+            
+            if (targetPiece !== null) break;
+            
+            newRow += rowDir;
+            newCol += colDir;
+        }
+    }
+
     return moves;
   }
 }
@@ -458,39 +466,63 @@ class BoardState {
   // switchTurn
 
   private isValidMove(from: number, to: number): boolean {
-    const temp = [...this.board];
-    const piece = temp[from];
-
-    temp[to] = piece;
-    temp[from] = null;
-
-    const kingPosition = this.findKing(this.turn, temp);
+    const tempBoard = [...this.board];
+    const piece = tempBoard[from];
+    tempBoard[to] = piece;
+    tempBoard[from] = null;
     
-    return !this.isSquareUnderAttack(kingPosition, this.turn, temp);
-
+    const kingPos = this.findKing(piece.color, tempBoard);
+    return !this.isSquareUnderAttack(kingPos, piece.color, tempBoard);
   }
 
   private findKing(color: string, board: Array<ChessPiece | null>): number {
     for(let i = 0; i < board.length; i++) {
-      const piece = board[i];
-      if (piece instanceof King && piece.color === color) {
-        return i;
-      }
+        const piece = board[i];
+        if (piece instanceof King && piece.color === color) {
+            return i;
+        }
     }
-    throw new Error(`${color} king not found`);
+    throw new Error(`${color} king not found on board`);
   }
 
   private isSquareUnderAttack(square: number, color: string, board: Array<ChessPiece | null>): boolean {
     for(let i = 0; i < board.length; i++) {
-      const piece = board[i];
-      if (piece && piece.color !== color) {
-        const moves = piece.generate(this, i);
-        if (moves.includes(square)) {
-          return true;
+        const piece = board[i];
+        if (piece && piece.color !== color) {
+            const tempBoard = new BoardState();
+            tempBoard.board = [...board];
+            
+            const moves = piece.generate(tempBoard, i);
+            if (moves.includes(square)) {
+                return true;
+            }
         }
-      }
     }
     return false;
+  }
+
+  private isCheckmate(color: string): boolean {
+    if (!this.isInCheck(color)) {
+        return false;
+    }
+    for (let i = 0; i < this.board.length; i++) {
+        const piece = this.board[i];
+        if (piece && piece.color === color) {
+            const moves = piece.generate(this, i);
+            for (const move of moves) {
+                if (this.isValidMove(i, move)) {
+                    return false;
+                }
+            }
+        }
+    }
+    
+    return true;
+  }
+
+  private isInCheck(color: string): boolean {
+    const kingPosition = this.findKing(color, this.board);
+    return this.isSquareUnderAttack(kingPosition, color, this.board);
   }
 
   makeMove(from: number, to: number): boolean {
@@ -500,15 +532,35 @@ class BoardState {
     if (piece.color !== this.turn) return false;
 
     const possibleMoves = piece.generate(this, from);
-    console.log(possibleMoves);
     if (!possibleMoves.includes(to)) return false;
 
     if (!this.isValidMove(from, to)) {
-      return false;
+        console.log("Move would leave/put king in check!");
+        return false;
+    }
+
+    const capturedPiece = this.board[to];
+    if (piece instanceof Pawn) {
+        const enPassantRow = piece.color === 'white' ? 3 : 4;
+        if (Math.floor(from / 8) === enPassantRow) {
+            const sideSquare = piece.color === 'white' ? to + 8 : to - 8;
+            if (this.board[sideSquare] instanceof Pawn) {
+                this.board[sideSquare] = null;
+            }
+        }
+        piece.hasMoved = true;
+        piece.justMadeTwoSquareMove = Math.abs(to - from) === 16;
     }
 
     this.board[to] = piece;
     this.board[from] = null;
+    const opponentColor = this.turn === 'white' ? 'black' : 'white';
+    if (this.isInCheck(opponentColor)) {
+        console.log(`${opponentColor} is in check!`);
+        if (this.isCheckmate(opponentColor)) {
+            console.log(`Checkmate! ${this.turn} wins!`);
+        }
+    }
 
     this.switchTurn();
     return true;
@@ -534,11 +586,10 @@ class BoardState {
 
   gameloop(): void {
     while (true) {
-      // Display current board state
       this.displayBoard();
       
       const move = prompt(`${this.turn}'s move: type in the form FromTo ie.. e2e4`);
-      if (!move) continue;  // Handle null/empty input
+      if (!move) continue;
       
       try {
         const from = algebraicToIndex(move.slice(0,2));
@@ -577,6 +628,7 @@ class BoardState {
       "└─────┘"
     ];
   }
+
 
   private displayBoard(): void {
   const boardArt: string[] = [];
