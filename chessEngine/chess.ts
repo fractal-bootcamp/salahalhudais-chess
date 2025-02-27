@@ -1,4 +1,4 @@
-abstract class ChessPiece {
+export abstract class ChessPiece {
   public color: 'white' | 'black';
   public type: 'pawn' | 'rook' | 'knight' | 'bishop' | 'queen' | 'king';
 
@@ -14,9 +14,9 @@ interface generateMoves {
   generate(board: BoardState, index: number): number[];
 }
 
-class Pawn extends ChessPiece implements generateMoves {
-  private justMadeTwoSquareMove = false;
-  private hasMoved = false;
+export class Pawn extends ChessPiece implements generateMoves {
+  public justMadeTwoSquareMove = false;
+  public hasMoved = false;
   constructor(color: 'white' | 'black') {
     super(color, 'pawn')
   }
@@ -78,7 +78,8 @@ class Pawn extends ChessPiece implements generateMoves {
     return moves;
   }
 }
-class Knight extends ChessPiece implements generateMoves {
+
+export class Knight extends ChessPiece implements generateMoves {
   constructor(color: 'white' | 'black') {
     super(color, 'knight')
   }
@@ -113,20 +114,17 @@ class Knight extends ChessPiece implements generateMoves {
   }
 }
 
-class Bishop extends ChessPiece implements generateMoves {
+export class Bishop extends ChessPiece implements generateMoves {
   constructor(color: 'white' | 'black') {
     super(color, 'bishop')
   }
 
   generate(board: BoardState, index: number): number[] {
-    x Generate a bunch of possible moves that can be made from the current board State. We can then use this as a prefix
+    // x Generate a bunch of possible moves that can be made from the current board State. We can then use this as a prefix
     // to every move. For every piece, it will contain it's own state of possible moves.
     
 
     let moves: number[] = []
-
-    let col = index % 8;
-    let row = Math.floor(index / 8)
 
     /*
 
@@ -175,7 +173,7 @@ class Bishop extends ChessPiece implements generateMoves {
   }
 }
 
-class Rook extends ChessPiece implements generateMoves {
+export class Rook extends ChessPiece implements generateMoves {
   constructor(color: 'white' | 'black') {
     super(color, 'rook')
   }
@@ -222,7 +220,7 @@ class Rook extends ChessPiece implements generateMoves {
   }
 }
 
-class Queen extends ChessPiece implements generateMoves {
+export class Queen extends ChessPiece implements generateMoves {
   constructor(color: 'white' | 'black') {
     super(color, 'queen')
   }
@@ -292,7 +290,7 @@ class Queen extends ChessPiece implements generateMoves {
   }
 }
 
-class King extends ChessPiece implements generateMoves {
+export class King extends ChessPiece implements generateMoves {
   constructor(color: 'white' | 'black') {
     super(color, 'king')
   }
@@ -357,9 +355,9 @@ const algebraicToIndex = (index: String): number => {
 
 class BoardState {
   public board: Array<ChessPiece | null> = [];
-  private castlingPrivilegeWhite = true;
-  private castlingPrivilegeBlack = true;
-  private whitePieces: [
+  public castlingPrivilegeWhite = true;
+  public castlingPrivilegeBlack = true;
+  public whitePieces: [
     King,
     Queen,
     Bishop,
@@ -377,7 +375,7 @@ class BoardState {
     Pawn,
     Pawn
   ] = [] as any;
-  private blackPieces: [
+  public blackPieces: [
     King,
     Queen,
     Bishop,
@@ -395,7 +393,7 @@ class BoardState {
     Pawn,
     Pawn
   ] = [] as any;
-  private turn;
+  public turn;
 
   constructor() {
     this.turn = "white";
@@ -465,17 +463,19 @@ class BoardState {
   // isValidMove to check if valid move
   // switchTurn
 
-  private isValidMove(from: number, to: number): boolean {
+   isValidMove(from: number, to: number): boolean {
     const tempBoard = [...this.board];
     const piece = tempBoard[from];
     tempBoard[to] = piece;
     tempBoard[from] = null;
+
+    if(!piece) return false;
     
     const kingPos = this.findKing(piece.color, tempBoard);
     return !this.isSquareUnderAttack(kingPos, piece.color, tempBoard);
   }
 
-  private findKing(color: string, board: Array<ChessPiece | null>): number {
+  public findKing(color: string, board: Array<ChessPiece | null>): number {
     for(let i = 0; i < board.length; i++) {
         const piece = board[i];
         if (piece instanceof King && piece.color === color) {
@@ -485,7 +485,7 @@ class BoardState {
     throw new Error(`${color} king not found on board`);
   }
 
-  private isSquareUnderAttack(square: number, color: string, board: Array<ChessPiece | null>): boolean {
+  public isSquareUnderAttack(square: number, color: string, board: Array<ChessPiece | null>): boolean {
     for(let i = 0; i < board.length; i++) {
         const piece = board[i];
         if (piece && piece.color !== color) {
@@ -501,7 +501,7 @@ class BoardState {
     return false;
   }
 
-  private isCheckmate(color: string): boolean {
+  public isCheckmate(color: string): boolean {
     if (!this.isInCheck(color)) {
         return false;
     }
@@ -520,7 +520,7 @@ class BoardState {
     return true;
   }
 
-  private isInCheck(color: string): boolean {
+  public isInCheck(color: string): boolean {
     const kingPosition = this.findKing(color, this.board);
     return this.isSquareUnderAttack(kingPosition, color, this.board);
   }
@@ -539,7 +539,6 @@ class BoardState {
         return false;
     }
 
-    const capturedPiece = this.board[to];
     if (piece instanceof Pawn) {
         const enPassantRow = piece.color === 'white' ? 3 : 4;
         if (Math.floor(from / 8) === enPassantRow) {
@@ -630,7 +629,7 @@ class BoardState {
   }
 
 
-  private displayBoard(): void {
+  public displayBoard(): void {
   const boardArt: string[] = [];
   const cellHeight = 3;
   let topLabels = "    ";
@@ -679,7 +678,7 @@ class BoardState {
 
   // Rendering attempt failed so I had to use gpt, this one below had too many overlapping column lines and looks horrible
   /*
-    private displayBoard(): void {
+    public displayBoard(): void {
     console.clear();
     console.log('\n     a    b    c    d    e    f    g    h');
     console.log('  ┌────┬────┬────┬────┬────┬────┬────┬────┐');
@@ -700,7 +699,7 @@ class BoardState {
     console.log('     a    b    c    d    e    f    g    h    \n');
   }
 
-  private getPieceSymbol(piece: ChessPiece): string {
+  public getPieceSymbol(piece: ChessPiece): string {
     // Use full-width symbols with proper spacing
     const symbols = {
       white: {

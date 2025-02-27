@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: chess-backend
+    env: node
+    buildCommand: npm install && npm run build  # This will compile TypeScript
+    startCommand: node dist/server.js  # Assuming TypeScript compiles to dist directory
+    envVars:
+      - key: NODE_ENV
+        value: production
